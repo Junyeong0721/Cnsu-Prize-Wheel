@@ -1,0 +1,11 @@
+node_modules/
+dist/
+release/
+build-resources/
+src/generated-assets.ts
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
+.local-test/

@@ -1,0 +1,70 @@
+{
+  "name": "cnsu-lucky-spin",
+  "version": "1.0.2",
+  "description": "충남도립대학교 홍보 행사용 오프라인 돌림판",
+  "author": "CNSU Lucky Spin contributors",
+  "license": "MIT",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "npm run build && electron .",
+    "preview": "node scripts/preview.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "dist:win": "npm run build && npm run typecheck && npm test && electron-builder --win portable --x64 --publish never",
+    "format": "prettier --write src scripts electron tests *.json *.md .github/workflows/*.yml"
+  },
+  "dependencies": {
+    "lucide-react": "1.31.0",
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.19",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "electron": "45.2.3",
+    "electron-builder": "26.18.0",
+    "esbuild": "0.28.2",
+    "png-to-ico": "3.0.2",
+    "prettier": "3.6.2",
+    "sharp": "0.35.4",
+    "typescript": "5.9.3"
+  },
+  "build": {
+    "appId": "org.cnsu.luckyspin",
+    "productName": "CNSU Lucky Spin",
+    "copyright": "Copyright © 2026 CNSU Lucky Spin contributors",
+    "directories": {
+      "output": "release/1.0.2",
+      "buildResources": "build-resources"
+    },
+    "files": [
+      "dist/index.html",
+      "electron/main.cjs",
+      "package.json"
+    ],
+    "asar": true,
+    "npmRebuild": false,
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build-resources/icon.ico",
+      "artifactName": "CNSU-Lucky-Spin-${version}-Windows-x64.exe",
+      "signExecutable": false
+    },
+    "portable": {
+      "requestExecutionLevel": "user"
+    }
+  }
+}
