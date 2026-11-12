@@ -82,13 +82,29 @@ export function pickWinner(prizes: Prize[], ticket: number): number {
   }
   throw new Error("Invalid probabilities");
 }
+export function wheelSectors(prizes: Prize[]) {
+  if (validatePrizes(prizes)) throw new Error("Invalid probabilities");
+  let total = 0;
+  return prizes
+    .map((prize, index) => {
+      const startAngle = (total / 100) * 360;
+      total += Number(prize.probability);
+      return { index, startAngle, endAngle: (total / 100) * 360 };
+    })
+    .filter((sector) => sector.endAngle > sector.startAngle);
+}
 export function targetRotation(
   current: number,
   index: number,
-  count: number,
+  prizes: Prize[],
   fraction: number,
 ): number {
-  const target = (360 - (index + fraction) * (360 / count)) % 360;
+  const sector = wheelSectors(prizes).find((item) => item.index === index);
+  if (!sector || !Number.isFinite(fraction) || fraction <= 0 || fraction >= 1)
+    throw new Error("Invalid landing position");
+  const angle =
+    sector.startAngle + (sector.endAngle - sector.startAngle) * fraction;
+  const target = (360 - angle) % 360;
   return current + 360 * 6 + ((target - (current % 360) + 360) % 360);
 }
 export function readSaved(

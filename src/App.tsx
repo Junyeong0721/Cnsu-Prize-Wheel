@@ -27,6 +27,7 @@ import {
   pickWinner,
   randomInt,
   targetRotation,
+  wheelSectors,
   readSaved,
 } from "./wheel";
 
@@ -45,7 +46,7 @@ function Wheel({
   duration: number;
   spinning: boolean;
 }) {
-  const step = 360 / prizes.length;
+  const sectors = wheelSectors(prizes);
   const polar = (deg: number, radius: number) =>
     [
       250 + radius * Math.cos((deg * Math.PI) / 180),
@@ -87,44 +88,72 @@ function Wheel({
           transition: `transform ${duration}ms cubic-bezier(.12,.7,.12,1)`,
         }}
       >
-        {prizes.map((p, i) => {
-          const start = i * step - 90,
-            end = (i + 1) * step - 90,
+        {sectors.map(({ index, startAngle, endAngle }) => {
+          const p = prizes[index];
+          const probability = Number(p.probability);
+          const step = endAngle - startAngle;
+          const compact = probability < 5;
+          const start = startAngle - 90,
+            end = endAngle - 90,
             middle = (start + end) / 2;
           const [sx, sy] = polar(start, 218),
             [ex, ey] = polar(end, 218),
-            [tx, ty] = polar(middle, prizes.length > 8 ? 150 : 140);
+            [tx, ty] = polar(middle, compact ? 170 : 140);
           const angle = middle > 90 && middle < 270 ? middle + 180 : middle;
-          const label = p.name.length > 10 ? p.name.slice(0, 9) + "…" : p.name;
+          const labelLimit = probability < 10 ? 7 : 10;
+          const label =
+            p.name.length > labelLimit
+              ? p.name.slice(0, labelLimit - 1) + "…"
+              : p.name;
           return (
             <g key={p.id}>
-              <path
-                d={`M250,250 L${sx},${sy} A218,218 0 ${step > 180 ? 1 : 0},1 ${ex},${ey} Z`}
-                fill={p.color}
-                stroke="#ffffff"
-                strokeWidth="2"
-              />
+              <title>
+                {p.name}: {probability}%
+              </title>
+              {probability === 100 ? (
+                <circle cx="250" cy="250" r="218" fill={p.color} />
+              ) : (
+                <path
+                  d={`M250,250 L${sx},${sy} A218,218 0 ${step > 180 ? 1 : 0},1 ${ex},${ey} Z`}
+                  fill={p.color}
+                  stroke="#ffffff"
+                  strokeWidth="2"
+                />
+              )}
               <g
                 transform={`translate(${tx} ${ty}) rotate(${angle})`}
                 fill="#10285c"
               >
-                <text
-                  textAnchor="middle"
-                  y="-3"
-                  fontSize={prizes.length > 8 ? 13 : 17}
-                  fontWeight="750"
-                >
-                  {label}
-                </text>
-                <text
-                  textAnchor="middle"
-                  y="20"
-                  fontSize="12"
-                  opacity=".74"
-                  fontWeight="600"
-                >
-                  {p.probability}%
-                </text>
+                {compact ? (
+                  <text
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize={probability === 1 ? 8 : 12}
+                    fontWeight="750"
+                  >
+                    {probability}%
+                  </text>
+                ) : (
+                  <>
+                    <text
+                      textAnchor="middle"
+                      y="-3"
+                      fontSize={probability < 10 ? 12 : 17}
+                      fontWeight="750"
+                    >
+                      {label}
+                    </text>
+                    <text
+                      textAnchor="middle"
+                      y={probability < 10 ? 14 : 20}
+                      fontSize={probability < 10 ? 10 : 12}
+                      opacity=".74"
+                      fontWeight="600"
+                    >
+                      {probability}%
+                    </text>
+                  </>
+                )}
               </g>
             </g>
           );
@@ -286,7 +315,7 @@ export default function Home() {
     setDuration(ms);
     setSpinning(true);
     setRotation(
-      targetRotation(rotation, index, prizes.length, 0.2 + randomInt(61) / 100),
+      targetRotation(rotation, index, prizes, 0.2 + randomInt(61) / 100),
     );
     timer.current = setTimeout(() => {
       setWinner(result);
@@ -439,6 +468,10 @@ export default function Home() {
                   : "YOUR NEXT CHAPTER"}
               </span>
             </div>
+            <p className="school-promise">
+              <GraduationCap size={18} aria-hidden="true" />
+              국립대 최초 무상교육
+            </p>
             <h2>{title}</h2>
             <p className="stage-subtitle">당신의 새로운 시작을 응원합니다!</p>
             <Wheel
@@ -447,6 +480,28 @@ export default function Home() {
               duration={duration}
               spinning={spinning}
             />
+            {prizes.some(
+              (p) => Number(p.probability) > 0 && Number(p.probability) < 5,
+            ) && (
+              <ul className="wheel-legend" aria-label="작은 칸의 경품">
+                {prizes
+                  .filter(
+                    (p) =>
+                      Number(p.probability) > 0 && Number(p.probability) < 5,
+                  )
+                  .map((p) => (
+                    <li key={p.id}>
+                      <span
+                        className="legend-color"
+                        style={{ background: p.color }}
+                        aria-hidden="true"
+                      />
+                      <span>{p.name}</span>
+                      <b>{p.probability}%</b>
+                    </li>
+                  ))}
+              </ul>
+            )}
             <button
               ref={spinButton}
               className="spin-button"
@@ -475,7 +530,7 @@ export default function Home() {
               <span>
                 <span className="tiny-dot" /> 설정 확률에 따른 무작위 추첨
               </span>
-              <span>모든 칸은 같은 크기로 표시됩니다</span>
+              <span>칸 크기는 당첨 확률에 비례합니다</span>
             </div>
           </section>
           <aside className="settings-panel">
@@ -642,7 +697,7 @@ export default function Home() {
                   </div>
                   <div className="settings-note">
                     <span>0~100%의 정수만 입력할 수 있어요.</span>
-                    <span>0% 경품은 당첨 대상에서 제외됩니다.</span>
+                    <span>0% 경품은 룰렛과 당첨 대상에서 제외됩니다.</span>
                   </div>
                   <button
                     className="apply-button"
@@ -764,7 +819,7 @@ export default function Home() {
         </div>
         <footer>
           <span>
-            CNSU LUCKY SPIN <b>v1.0.2</b>
+            CNSU LUCKY SPIN <b>v1.0.3</b>
           </span>
           <p>충남도립대학교 홍보 행사용 돌림판</p>
           <span>

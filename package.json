@@ -1,6 +1,6 @@
 {
   "name": "cnsu-lucky-spin",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "충남도립대학교 홍보 행사용 오프라인 돌림판",
   "author": "CNSU Lucky Spin contributors",
   "license": "MIT",
@@ -40,7 +40,7 @@
     "productName": "CNSU Lucky Spin",
     "copyright": "Copyright © 2026 CNSU Lucky Spin contributors",
     "directories": {
-      "output": "release/1.0.2",
+      "output": "release/1.0.3",
       "buildResources": "build-resources"
     },
     "files": [

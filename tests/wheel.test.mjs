@@ -5,6 +5,7 @@ import {
   pickWinner,
   validatePrizes,
   targetRotation,
+  wheelSectors,
   readSaved,
   randomInt,
 } from "../src/wheel.ts";
@@ -43,17 +44,72 @@ test("reject fractional, empty, negative, over-100 and non-totaling probabilitie
   );
   assert.throws(() => pickWinner(DEFAULT_PRIZES, 100));
 });
-test("every final pointer position matches the selected prize for 2–12 sectors and repeated spins", () => {
+const makePrizes = (weights) =>
+  weights.map((probability, index) => ({
+    ...DEFAULT_PRIZES[index % DEFAULT_PRIZES.length],
+    id: `prize-${index}`,
+    probability,
+  }));
+
+test("every integer percentage gets its exact share of tickets and 3.6 degrees per percent", () => {
+  for (let percent = 1; percent < 100; percent++) {
+    const prizes = makePrizes([0, percent, 100 - percent]);
+    const counts = prizes.map(() => 0);
+    for (let ticket = 0; ticket < 100; ticket++)
+      counts[pickWinner(prizes, ticket)]++;
+    assert.deepEqual(counts, [0, percent, 100 - percent]);
+    const sectors = wheelSectors(prizes);
+    assert.deepEqual(
+      sectors.map((s) => s.index),
+      [1, 2],
+    );
+    assert.ok(Math.abs(sectors[0].endAngle - percent * 3.6) < 1e-9);
+    assert.equal(sectors[1].endAngle, 360);
+  }
+});
+
+test("every final pointer position matches the weighted prize for uneven, tiny, zero and 100-percent slices", () => {
   let current = 0;
+  const configurations = [
+    [2, 98],
+    [98, 2],
+    [0, 2, 0, 98],
+    [0, 100, 0],
+    [100, 0],
+    [30, 20, 10, 5, 20, 15],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 89],
+  ];
   for (let count = 2; count <= 12; count++)
-    for (let index = 0; index < count; index++)
+    configurations.push(
+      Array.from(
+        { length: count },
+        (_, i) => Math.floor(100 / count) + (i < 100 % count ? 1 : 0),
+      ),
+    );
+  for (const weights of configurations) {
+    const prizes = makePrizes(weights);
+    for (const sector of wheelSectors(prizes)) {
+      assert.ok(
+        Math.abs(
+          sector.endAngle - sector.startAngle - weights[sector.index] * 3.6,
+        ) < 1e-9,
+      );
       for (const fraction of [0.2, 0.5, 0.8]) {
-        const next = targetRotation(current, index, count, fraction);
+        const next = targetRotation(current, sector.index, prizes, fraction);
         assert.ok(next - current >= 2160);
         const pointerAngle = (360 - (next % 360)) % 360;
-        assert.equal(Math.floor(pointerAngle / (360 / count)), index);
+        assert.ok(
+          pointerAngle > sector.startAngle && pointerAngle < sector.endAngle,
+        );
+        assert.equal(
+          pickWinner(prizes, Math.floor(pointerAngle / 3.6)),
+          sector.index,
+        );
         current = next;
       }
+    }
+  }
+  assert.throws(() => targetRotation(0, 0, makePrizes([0, 100]), 0.5));
 });
 test("saved configuration survives reload, rejects corrupt data, and caps history", () => {
   const saved = {
