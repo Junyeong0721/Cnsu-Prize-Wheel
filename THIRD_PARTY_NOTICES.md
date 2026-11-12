@@ -13,6 +13,6 @@
 | png-to-ico            | Windows 아이콘 생성    | MIT                                              |
 | TypeScript / Prettier | 개발 도구              | Apache-2.0 / MIT                                 |
 
-번들 JavaScript의 라이선스 주석은 빌드 결과 안에 보존합니다. Windows 배포물의 Electron/Chromium 라이선스 원문도 함께 배포하세요. 이 프로젝트의 배포 준비 스크립트가 `release/1.0.3/win-unpacked`의 `LICENSE.electron.txt`와 `LICENSES.chromium.html`을 배포 폴더로 복사합니다.
+번들 JavaScript의 라이선스 주석은 빌드 결과 안에 보존합니다. Windows 배포물의 Electron/Chromium 라이선스 원문도 함께 배포하세요. 이 프로젝트의 배포 준비 스크립트가 `release/1.0.4/win-unpacked`의 `LICENSE.electron.txt`와 `LICENSES.chromium.html`을 배포 폴더로 복사합니다.
 
 학교 로고는 `BRANDING.md`를 확인하세요.

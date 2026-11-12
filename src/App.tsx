@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   ArrowDownToLine,
   ArrowLeft,
@@ -32,9 +32,56 @@ import {
 } from "./wheel";
 
 import { LOGO } from "./generated-assets";
+import {
+  fitWheelLabel,
+  LABEL_MAX_FONT,
+  LABEL_OUTER_RADIUS,
+} from "./wheel-label";
 
 const STORAGE_KEY = "cnsu-lucky-spin-v1";
 const SCHOOL_URL = "https://www.cnsu.ac.kr/univ/main.do";
+function WheelLabel({
+  name,
+  span,
+  middle,
+}: {
+  name: string;
+  span: number;
+  middle: number;
+}) {
+  const text = useRef<SVGTextElement>(null);
+  const [fontSize, setFontSize] = useState(LABEL_MAX_FONT);
+  const flipped = middle > 90 && middle < 270;
+  useLayoutEffect(() => {
+    if (!text.current) return;
+    // Measure at a fixed size so changing a name or probability can grow as well as shrink it.
+    text.current.setAttribute("font-size", String(LABEL_MAX_FONT));
+    const bounds = text.current.getBBox();
+    const width = Math.max(bounds.width, text.current.getComputedTextLength());
+    const height =
+      2 * Math.max(Math.abs(bounds.y), Math.abs(bounds.y + bounds.height));
+    const next = fitWheelLabel(span, width, height);
+    text.current.setAttribute("font-size", String(next));
+    setFontSize(next);
+  }, [name, span]);
+  return (
+    <g
+      transform={`translate(250 250) rotate(${flipped ? middle + 180 : middle})`}
+    >
+      <text
+        ref={text}
+        x={flipped ? -LABEL_OUTER_RADIUS : LABEL_OUTER_RADIUS}
+        textAnchor={flipped ? "start" : "end"}
+        dominantBaseline="central"
+        fontSize={fontSize}
+        fontWeight="750"
+        fill="#10285c"
+      >
+        {name}
+      </text>
+    </g>
+  );
+}
 function Wheel({
   prizes,
   rotation,
@@ -82,7 +129,7 @@ function Wheel({
         className="wheel-disc"
         viewBox="0 0 500 500"
         role="img"
-        aria-label={`돌림판: ${prizes.map((p) => `${p.name} ${p.probability}%`).join(", ")}`}
+        aria-label={`돌림판: ${sectors.map(({ index }) => prizes[index].name).join(", ")}`}
         style={{
           transform: `rotate(${rotation}deg)`,
           transition: `transform ${duration}ms cubic-bezier(.12,.7,.12,1)`,
@@ -92,24 +139,14 @@ function Wheel({
           const p = prizes[index];
           const probability = Number(p.probability);
           const step = endAngle - startAngle;
-          const compact = probability < 5;
           const start = startAngle - 90,
             end = endAngle - 90,
             middle = (start + end) / 2;
           const [sx, sy] = polar(start, 218),
-            [ex, ey] = polar(end, 218),
-            [tx, ty] = polar(middle, compact ? 170 : 140);
-          const angle = middle > 90 && middle < 270 ? middle + 180 : middle;
-          const labelLimit = probability < 10 ? 7 : 10;
-          const label =
-            p.name.length > labelLimit
-              ? p.name.slice(0, labelLimit - 1) + "…"
-              : p.name;
+            [ex, ey] = polar(end, 218);
           return (
             <g key={p.id}>
-              <title>
-                {p.name}: {probability}%
-              </title>
+              <title>{p.name}</title>
               {probability === 100 ? (
                 <circle cx="250" cy="250" r="218" fill={p.color} />
               ) : (
@@ -120,41 +157,7 @@ function Wheel({
                   strokeWidth="2"
                 />
               )}
-              <g
-                transform={`translate(${tx} ${ty}) rotate(${angle})`}
-                fill="#10285c"
-              >
-                {compact ? (
-                  <text
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fontSize={probability === 1 ? 8 : 12}
-                    fontWeight="750"
-                  >
-                    {probability}%
-                  </text>
-                ) : (
-                  <>
-                    <text
-                      textAnchor="middle"
-                      y="-3"
-                      fontSize={probability < 10 ? 12 : 17}
-                      fontWeight="750"
-                    >
-                      {label}
-                    </text>
-                    <text
-                      textAnchor="middle"
-                      y={probability < 10 ? 14 : 20}
-                      fontSize={probability < 10 ? 10 : 12}
-                      opacity=".74"
-                      fontWeight="600"
-                    >
-                      {probability}%
-                    </text>
-                  </>
-                )}
-              </g>
+              <WheelLabel name={p.name} span={step} middle={middle} />
             </g>
           );
         })}
@@ -480,28 +483,6 @@ export default function Home() {
               duration={duration}
               spinning={spinning}
             />
-            {prizes.some(
-              (p) => Number(p.probability) > 0 && Number(p.probability) < 5,
-            ) && (
-              <ul className="wheel-legend" aria-label="작은 칸의 경품">
-                {prizes
-                  .filter(
-                    (p) =>
-                      Number(p.probability) > 0 && Number(p.probability) < 5,
-                  )
-                  .map((p) => (
-                    <li key={p.id}>
-                      <span
-                        className="legend-color"
-                        style={{ background: p.color }}
-                        aria-hidden="true"
-                      />
-                      <span>{p.name}</span>
-                      <b>{p.probability}%</b>
-                    </li>
-                  ))}
-              </ul>
-            )}
             <button
               ref={spinButton}
               className="spin-button"
@@ -819,7 +800,7 @@ export default function Home() {
         </div>
         <footer>
           <span>
-            CNSU LUCKY SPIN <b>v1.0.3</b>
+            CNSU LUCKY SPIN <b>v1.0.4</b>
           </span>
           <p>충남도립대학교 홍보 행사용 돌림판</p>
           <span>

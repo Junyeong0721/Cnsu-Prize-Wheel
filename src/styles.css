@@ -1500,29 +1500,6 @@ main {
 .stage .school-promise + h2 {
   margin-top: 10px;
 }
-.wheel-legend {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 6px 12px;
-  list-style: none;
-  margin: -2px 0 16px;
-  padding: 0;
-  color: #294e80;
-  font-size: 11px;
-}
-.wheel-legend li {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.legend-color {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  border: 1px solid #10285c20;
-  flex-shrink: 0;
-}
 .wheel-wrap {
   width: min(100%, 438px);
   margin: 20px auto 18px;
